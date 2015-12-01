@@ -72,7 +72,26 @@ func TestActivityTimeSeriesByID(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		fmt.Printf("データサイズ:%d\n", len(activitiesLog))
+		fmt.Printf("データサイズ:%d\n", len(activitiesLog.Logs))
 	}
 
+}
+
+func TestBrowseActivityTypes(t *testing.T) {
+	client, err := Prepare()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	response, err := client.Activity.BrowseActivityTypes()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, category := range response.Categories {
+		for _, activity := range category.Activities {
+			fmt.Println(activity.Name)
+		}
+	}
 }

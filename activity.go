@@ -32,8 +32,9 @@ const (
 	OneYear    Period = "1y"
 	Max        Period = "max"
 	// ActivityURL fitbit activity api url
-	ActivityURL           string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
-	ActivityTimeSeriesURL string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
+	ActivityURL            string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
+	ActivityTimeSeriesURL  string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
+	BrowseActivityTypesURL string = "https://api.fitbit.com/1/activities.json"
 )
 
 // Activities
@@ -94,53 +95,73 @@ type ActivityResponse struct {
 	Summary    Summary         `json:"summary"`
 }
 
-type ActivitiesLogString struct {
+type ActivitiesLog struct {
 	DateTime string `json:"dateTime"`
 	Value    string `json:"value"`
 }
 
+type ActivitiesLogIntradayDataSet struct {
+	Time  string `json:"time"`
+	Value string `json:"value"`
+}
+
+type ActivitiesLogIntraday struct {
+	DataSetInterval uint64                          `json:"datasetInterval"`
+	DataSet         []*ActivitiesLogIntradayDataSet `json:"dataset"`
+}
+
+type ActivityTimeSeriesResponse struct {
+	Logs     []*ActivitiesLog
+	Intraday *ActivitiesLogIntraday
+}
+
 type ActivitiesLogStepsResponse struct {
-	ActivitiesLogSteps []*ActivitiesLogString `json:"activities-steps"`
+	ActivitiesLogSteps         []*ActivitiesLog       `json:"activities-steps"`
+	ActivitiesLogStepsIntraday *ActivitiesLogIntraday `json:"activities-steps-intraday"`
 }
 
 type ActivitiesLogCaloriesResponse struct {
-	ActivitiesLogCalories []*ActivitiesLogString `json:"activities-calories"`
+	ActivitiesLogCalories         []*ActivitiesLog       `json:"activities-calories"`
+	ActivitiesLogCaloriesIntraday *ActivitiesLogIntraday `json:"activities-calories-intraday"`
 }
 
 type ActivitiesLogCaloriesBMRResponse struct {
-	ActivitiesLogCaloriesBMR []*ActivitiesLogString `json:"activities-caloriesBMR"`
+	ActivitiesLogCaloriesBMR []*ActivitiesLog `json:"activities-caloriesBMR"`
 }
 
 type ActivitiesLogDistanceResponse struct {
-	ActivitiesLogDistance []*ActivitiesLogString `json:"activities-distance"`
+	ActivitiesLogDistance         []*ActivitiesLog       `json:"activities-distance"`
+	ActivitiesLogDistanceIntraday *ActivitiesLogIntraday `json:"activities-distance-intraday"`
 }
 
 type ActivitiesLogFloorsResponse struct {
-	ActivitiesLogFloors []*ActivitiesLogString `json:"activities-floors"`
+	ActivitiesLogFloors         []*ActivitiesLog       `json:"activities-floors"`
+	ActivitiesLogFloorsIntraday *ActivitiesLogIntraday `json:"activities-floors-intraday"`
 }
 
 type ActivitiesLogElevationResponse struct {
-	ActivitiesLogElevation []*ActivitiesLogString `json:"activities-elevation"`
+	ActivitiesLogElevation         []*ActivitiesLog       `json:"activities-elevation"`
+	ActivitiesLogElevationIntraday *ActivitiesLogIntraday `json:"activities-elevation-intraday"`
 }
 
 type ActivitiesLogMinutesSedentaryResponse struct {
-	ActivitiesLogMinutesSedentary []*ActivitiesLogString `json:"activities-minutesSedentary"`
+	ActivitiesLogMinutesSedentary []*ActivitiesLog `json:"activities-minutesSedentary"`
 }
 
 type ActivitiesLogMinutesLightActiveResponse struct {
-	ActivitiesLogMinutesLightActive []*ActivitiesLogString `json:"activities-minutesLightActive"`
+	ActivitiesLogMinutesLightActive []*ActivitiesLog `json:"activities-minutesLightActive"`
 }
 
 type ActivitiesLogMinutesFairyActiveResponse struct {
-	ActivitiesLogMinutesFairyActive []*ActivitiesLogString `json:"activities-minutesFairyActive"`
+	ActivitiesLogMinutesFairyActive []*ActivitiesLog `json:"activities-minutesFairyActive"`
 }
 
 type ActivitiesLogMinutesVeryActiveResponse struct {
-	ActivitiesLogMinutesVeryActive []*ActivitiesLogString `json:"activities-minutesVeryActive"`
+	ActivitiesLogMinutesVeryActive []*ActivitiesLog `json:"activities-minutesVeryActive"`
 }
 
 type ActivitiesLogActivityCaloriesResponse struct {
-	ActivitiesLogActivityCalories []*ActivitiesLogString `json:"activities-activityCalories"`
+	ActivitiesLogActivityCalories []*ActivitiesLog `json:"activities-activityCalories"`
 }
 
 // DailyActivitySummaryByID hogehoge
@@ -171,7 +192,7 @@ func (a *Activity) DailyActivitySummary(date string) (*ActivityResponse, error) 
 }
 
 // ActivityTimeSeriesByID hogehoge
-func (a *Activity) ActivityTimeSeriesByID(userID string, date string, period Period, activityLogType ActivityLogType) ([]*ActivitiesLogString, error) {
+func (a *Activity) ActivityTimeSeriesByID(userID string, date string, period Period, activityLogType ActivityLogType) (*ActivityTimeSeriesResponse, error) {
 	url := fmt.Sprintf(ActivityTimeSeriesURL, userID, string(activityLogType), date, string(period))
 	resultByteArray, err := a.c.Get(url)
 	if err != nil {
@@ -180,80 +201,118 @@ func (a *Activity) ActivityTimeSeriesByID(userID string, date string, period Per
 	return activityLogConvert(resultByteArray, activityLogType)
 }
 
-func (a *Activity) ActivityTimeSeries(date string, period Period, activityLogType ActivityLogType) ([]*ActivitiesLogString, error) {
+func (a *Activity) ActivityTimeSeries(date string, period Period, activityLogType ActivityLogType) (*ActivityTimeSeriesResponse, error) {
 	return a.ActivityTimeSeriesByID("-", date, period, activityLogType)
 }
 
-func activityLogConvert(resultByteArray []byte, activityLogType ActivityLogType) ([]*ActivitiesLogString, error) {
+func activityLogConvert(resultByteArray []byte, activityLogType ActivityLogType) (*ActivityTimeSeriesResponse, error) {
 	switch activityLogType {
 	case StepsLog:
 		activityLogSteps := &ActivitiesLogStepsResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogSteps); err != nil {
 			return nil, err
 		}
-		return activityLogSteps.ActivitiesLogSteps, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogSteps.ActivitiesLogSteps, Intraday: activityLogSteps.ActivitiesLogStepsIntraday}, nil
 	case CaloriesLog:
 		activityLogCalories := &ActivitiesLogCaloriesResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogCalories); err != nil {
 			return nil, err
 		}
-		return activityLogCalories.ActivitiesLogCalories, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogCalories.ActivitiesLogCalories, Intraday: activityLogCalories.ActivitiesLogCaloriesIntraday}, nil
 	case CaloriesBMRLog:
 		activityLogCaloriesBMR := &ActivitiesLogCaloriesBMRResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogCaloriesBMR); err != nil {
 			return nil, err
 		}
-		return activityLogCaloriesBMR.ActivitiesLogCaloriesBMR, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogCaloriesBMR.ActivitiesLogCaloriesBMR}, nil
 	case DistanceLog:
 		activityLogDistance := &ActivitiesLogDistanceResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogDistance); err != nil {
 			return nil, err
 		}
-		return activityLogDistance.ActivitiesLogDistance, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogDistance.ActivitiesLogDistance, Intraday: activityLogDistance.ActivitiesLogDistanceIntraday}, nil
 	case FloorsLog:
 		activityLogFloor := &ActivitiesLogFloorsResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogFloor); err != nil {
 			return nil, err
 		}
-		return activityLogFloor.ActivitiesLogFloors, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogFloor.ActivitiesLogFloors, Intraday: activityLogFloor.ActivitiesLogFloorsIntraday}, nil
 	case ElevationLog:
 		activityLogElevation := &ActivitiesLogElevationResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogElevation); err != nil {
 			return nil, err
 		}
-		return activityLogElevation.ActivitiesLogElevation, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogElevation.ActivitiesLogElevation, Intraday: activityLogElevation.ActivitiesLogElevationIntraday}, nil
 	case MinutesSedentaryLog:
 		activityLogMinutesSedentary := &ActivitiesLogMinutesSedentaryResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogMinutesSedentary); err != nil {
 			return nil, err
 		}
-		return activityLogMinutesSedentary.ActivitiesLogMinutesSedentary, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogMinutesSedentary.ActivitiesLogMinutesSedentary}, nil
 	case MinutesLightActiveLog:
 		activityLogMinutesLightActive := &ActivitiesLogMinutesLightActiveResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogMinutesLightActive); err != nil {
 			return nil, err
 		}
-		return activityLogMinutesLightActive.ActivitiesLogMinutesLightActive, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogMinutesLightActive.ActivitiesLogMinutesLightActive}, nil
 	case MinutesFairlyActiveLog:
 		activityLogMinutesFairyActive := &ActivitiesLogMinutesFairyActiveResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogMinutesFairyActive); err != nil {
 			return nil, err
 		}
-		return activityLogMinutesFairyActive.ActivitiesLogMinutesFairyActive, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogMinutesFairyActive.ActivitiesLogMinutesFairyActive}, nil
 	case MinutesVeryActiveLog:
 		activityLogMinutesVeryActive := &ActivitiesLogMinutesVeryActiveResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogMinutesVeryActive); err != nil {
 			return nil, err
 		}
-		return activityLogMinutesVeryActive.ActivitiesLogMinutesVeryActive, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogMinutesVeryActive.ActivitiesLogMinutesVeryActive}, nil
 	case ActivityCaloriesLog:
 		activityLogActivityCalories := &ActivitiesLogActivityCaloriesResponse{}
 		if err := json.Unmarshal(resultByteArray, activityLogActivityCalories); err != nil {
 			return nil, err
 		}
-		return activityLogActivityCalories.ActivitiesLogActivityCalories, nil
+		return &ActivityTimeSeriesResponse{Logs: activityLogActivityCalories.ActivitiesLogActivityCalories}, nil
 	default:
 		return nil, errors.New(string(activityLogType) + " not implemented")
 	}
 
+}
+
+type ActivityLevel struct {
+	ID          uint64  `json:"id"`
+	MasSpeedMPH float64 `json:"maxSpeedMPH"`
+	MinSpeedMPH float64 `json:"minSpeedMPH"`
+	Mets        float64 `json:"mets"`
+	Name        string  `json:"name"`
+}
+
+type ActivityType struct {
+	AccessLevel    string           `json:"accessLevel"`
+	ActivityLevels []*ActivityLevel `json:"activityLevels"`
+	HasSpeed       bool             `json:"hasSpeed"`
+	ID             uint64           `json:"id"`
+	Name           string           `json:"name"`
+}
+
+type Category struct {
+	Activities []*ActivityType `json:"activities"`
+}
+
+type BrowseActivityTypesResponse struct {
+	Categories []*Category `json:"categories"`
+}
+
+func (a *Activity) BrowseActivityTypes() (*BrowseActivityTypesResponse, error) {
+	resultByteArray, err := a.c.Get(BrowseActivityTypesURL)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BrowseActivityTypesResponse{}
+	if err = json.Unmarshal(resultByteArray, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
