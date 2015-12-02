@@ -111,3 +111,21 @@ func TestGetActivityType(t *testing.T) {
 
 	fmt.Println(response.Activity.Name)
 }
+
+func TestGetFrequentActivities(t *testing.T) {
+	client, err := Prepare()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	response, err := client.Activity.GetFrequentActivities()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, frequentActivity := range response {
+		fmt.Println(frequentActivity.Name)
+	}
+}

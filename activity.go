@@ -32,10 +32,11 @@ const (
 	OneYear    Period = "1y"
 	Max        Period = "max"
 	// ActivityURL fitbit activity api url
-	ActivityURL            string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
-	ActivityTimeSeriesURL  string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
-	BrowseActivityTypesURL string = "https://api.fitbit.com/1/activities.json"
-	GetActivityTypeURL     string = "https://api.fitbit.com/1/activities/%s.json"
+	ActivityURL              string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
+	ActivityTimeSeriesURL    string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
+	BrowseActivityTypesURL   string = "https://api.fitbit.com/1/activities.json"
+	GetActivityTypeURL       string = "https://api.fitbit.com/1/activities/%s.json"
+	GetFrequentActivitiesURL string = "https://api.fitbit.com/1/user/-/activities/frequent.json"
 )
 
 // Activities
@@ -308,6 +309,15 @@ type GetActivityTypeResponse struct {
 	Activity *ActivityType `json:"activity"`
 }
 
+type FrequentActivity struct {
+	ActivityID  uint64 `json:"activityId"`
+	Calories    uint64 `json:"calories"`
+	Description string `json:"description"`
+	Distance    uint64 `json:"distance"`
+	Duration    uint64 `json:"duration"`
+	Name        string `json:"name"`
+}
+
 func (a *Activity) BrowseActivityTypes() (*BrowseActivityTypesResponse, error) {
 	resultByteArray, err := a.c.Get(BrowseActivityTypesURL)
 	if err != nil {
@@ -332,5 +342,19 @@ func (a *Activity) GetActivityType(activityID string) (*GetActivityTypeResponse,
 	if err = json.Unmarshal(resultByteArray, response); err != nil {
 		return nil, err
 	}
+	return response, nil
+}
+
+func (a *Activity) GetFrequentActivities() ([]FrequentActivity, error) {
+	resultByteArray, err := a.c.Get(GetFrequentActivitiesURL)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]FrequentActivity, 0)
+	if err = json.Unmarshal(resultByteArray, &response); err != nil {
+		return nil, err
+	}
+
 	return response, nil
 }
