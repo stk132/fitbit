@@ -309,7 +309,7 @@ type GetActivityTypeResponse struct {
 	Activity *ActivityType `json:"activity"`
 }
 
-type FrequentActivity struct {
+type UserActivity struct {
 	ActivityID  uint64 `json:"activityId"`
 	Calories    uint64 `json:"calories"`
 	Description string `json:"description"`
@@ -345,13 +345,13 @@ func (a *Activity) GetActivityType(activityID string) (*GetActivityTypeResponse,
 	return response, nil
 }
 
-func (a *Activity) GetFrequentActivities() ([]FrequentActivity, error) {
+func (a *Activity) GetFrequentActivities() ([]UserActivity, error) {
 	resultByteArray, err := a.c.Get(GetFrequentActivitiesURL)
 	if err != nil {
 		return nil, err
 	}
 
-	response := make([]FrequentActivity, 0)
+	var response []UserActivity
 	if err = json.Unmarshal(resultByteArray, &response); err != nil {
 		return nil, err
 	}
