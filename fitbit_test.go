@@ -95,3 +95,19 @@ func TestBrowseActivityTypes(t *testing.T) {
 		}
 	}
 }
+
+func TestGetActivityType(t *testing.T) {
+	client, err := Prepare()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	response, err := client.Activity.GetActivityType("1010")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fmt.Println(response.Activity.Name)
+}

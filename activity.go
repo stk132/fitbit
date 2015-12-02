@@ -35,6 +35,7 @@ const (
 	ActivityURL            string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
 	ActivityTimeSeriesURL  string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
 	BrowseActivityTypesURL string = "https://api.fitbit.com/1/activities.json"
+	GetActivityTypeURL     string = "https://api.fitbit.com/1/activities/%s.json"
 )
 
 // Activities
@@ -303,6 +304,10 @@ type BrowseActivityTypesResponse struct {
 	Categories []*Category `json:"categories"`
 }
 
+type GetActivityTypeResponse struct {
+	Activity *ActivityType `json:"activity"`
+}
+
 func (a *Activity) BrowseActivityTypes() (*BrowseActivityTypesResponse, error) {
 	resultByteArray, err := a.c.Get(BrowseActivityTypesURL)
 	if err != nil {
@@ -314,5 +319,18 @@ func (a *Activity) BrowseActivityTypes() (*BrowseActivityTypesResponse, error) {
 		return nil, err
 	}
 
+	return response, nil
+}
+
+func (a *Activity) GetActivityType(activityID string) (*GetActivityTypeResponse, error) {
+	resultByteArray, err := a.c.Get(fmt.Sprintf(GetActivityTypeURL, activityID))
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetActivityTypeResponse{}
+	if err = json.Unmarshal(resultByteArray, response); err != nil {
+		return nil, err
+	}
 	return response, nil
 }
