@@ -129,3 +129,21 @@ func TestGetFrequentActivities(t *testing.T) {
 		fmt.Println(frequentActivity.Name)
 	}
 }
+
+func TestGetRecentActivities(t *testing.T) {
+	client, err := Prepare()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	response, err := client.Activity.GetRecentActivities()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, recentActivity := range response {
+		fmt.Println(recentActivity.Name)
+	}
+}

@@ -37,6 +37,7 @@ const (
 	BrowseActivityTypesURL   string = "https://api.fitbit.com/1/activities.json"
 	GetActivityTypeURL       string = "https://api.fitbit.com/1/activities/%s.json"
 	GetFrequentActivitiesURL string = "https://api.fitbit.com/1/user/-/activities/frequent.json"
+	GetRecentActivitiesURL   string = "https://api.fitbit.com/1/user/-/activities/recent.json"
 )
 
 // Activities
@@ -345,16 +346,28 @@ func (a *Activity) GetActivityType(activityID string) (*GetActivityTypeResponse,
 	return response, nil
 }
 
-func (a *Activity) GetFrequentActivities() ([]UserActivity, error) {
-	resultByteArray, err := a.c.Get(GetFrequentActivitiesURL)
-	if err != nil {
-		return nil, err
-	}
-
+func unmarshalUserActivity(resultByteArray []byte) ([]UserActivity, error) {
 	var response []UserActivity
-	if err = json.Unmarshal(resultByteArray, &response); err != nil {
+	if err := json.Unmarshal(resultByteArray, &response); err != nil {
 		return nil, err
 	}
 
 	return response, nil
+}
+
+func (a *Activity) getUserActivities(url string) ([]UserActivity, error) {
+	resultByteArray, err := a.c.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return unmarshalUserActivity(resultByteArray)
+}
+
+func (a *Activity) GetFrequentActivities() ([]UserActivity, error) {
+	return a.getUserActivities(GetFrequentActivitiesURL)
+}
+
+func (a *Activity) GetRecentActivities() ([]UserActivity, error) {
+	return a.getUserActivities(GetRecentActivitiesURL)
 }
