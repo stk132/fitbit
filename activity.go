@@ -38,6 +38,7 @@ const (
 	GetActivityTypeURL       string = "https://api.fitbit.com/1/activities/%s.json"
 	GetFrequentActivitiesURL string = "https://api.fitbit.com/1/user/-/activities/frequent.json"
 	GetRecentActivitiesURL   string = "https://api.fitbit.com/1/user/-/activities/recent.json"
+	GetFavoriteActivitiesURL string = "https://api.fitbit.com/1/user/%s/activities/favorite.json"
 )
 
 // Activities
@@ -319,6 +320,13 @@ type UserActivity struct {
 	Name        string `json:"name"`
 }
 
+type FavoriteActivity struct {
+	ActivityID  uint64  `json:"activityId"`
+	Description string  `json:"description"`
+	Mets        float64 `json:"mets"`
+	Name        string  `json:"name"`
+}
+
 func (a *Activity) BrowseActivityTypes() (*BrowseActivityTypesResponse, error) {
 	resultByteArray, err := a.c.Get(BrowseActivityTypesURL)
 	if err != nil {
@@ -370,4 +378,22 @@ func (a *Activity) GetFrequentActivities() ([]UserActivity, error) {
 
 func (a *Activity) GetRecentActivities() ([]UserActivity, error) {
 	return a.getUserActivities(GetRecentActivitiesURL)
+}
+
+func (a *Activity) GetFavoriteActivitiesByID(userID string) ([]FavoriteActivity, error) {
+	responseByteArray, err := a.c.Get(fmt.Sprintf(GetFavoriteActivitiesURL, userID))
+	if err != nil {
+		return nil, err
+	}
+
+	var response []FavoriteActivity
+	if err = json.Unmarshal(responseByteArray, &response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (a *Activity) GetFavoriteActivities() ([]FavoriteActivity, error) {
+	return a.GetFavoriteActivitiesByID("-")
 }

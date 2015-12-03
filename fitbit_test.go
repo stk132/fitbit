@@ -147,3 +147,21 @@ func TestGetRecentActivities(t *testing.T) {
 		fmt.Println(recentActivity.Name)
 	}
 }
+
+func TestGetFavoriteActivities(t *testing.T) {
+	client, err := Prepare()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	response, err := client.Activity.GetFavoriteActivities()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, favoriteActivity := range response {
+		fmt.Println(favoriteActivity.Name)
+	}
+}
