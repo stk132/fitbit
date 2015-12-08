@@ -4,6 +4,7 @@ package fitbit
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -112,10 +113,45 @@ func (c *Client) Get(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer result.Body.Close()
+	if result.StatusCode != 200 {
+		return nil, errors.New("get request failed. status code isn't 200")
+	}
 
 	responseByteArray, err := ioutil.ReadAll(result.Body)
 	if err != nil {
 		return nil, err
 	}
 	return responseByteArray, nil
+}
+
+func (c *Client) Post(url string) error {
+	result, err := c.httpClient.Post(url, "application/x-www-form-urlencoded", nil)
+	if err != nil {
+		return err
+	}
+	defer result.Body.Close()
+
+	if result.StatusCode != 201 {
+		return errors.New("post failed. status code isn't 201")
+	}
+	return nil
+}
+
+func (c *Client) Delete(url string) error {
+	request, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+
+	result, err := c.httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer result.Body.Close()
+
+	if result.StatusCode != 204 {
+		return errors.New(fmt.Sprintf("delete failed. stauts code:%d", result.StatusCode))
+	}
+
+	return nil
 }

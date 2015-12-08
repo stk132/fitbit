@@ -32,13 +32,14 @@ const (
 	OneYear    Period = "1y"
 	Max        Period = "max"
 	// ActivityURL fitbit activity api url
-	ActivityURL              string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
-	ActivityTimeSeriesURL    string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
-	BrowseActivityTypesURL   string = "https://api.fitbit.com/1/activities.json"
-	GetActivityTypeURL       string = "https://api.fitbit.com/1/activities/%s.json"
-	GetFrequentActivitiesURL string = "https://api.fitbit.com/1/user/-/activities/frequent.json"
-	GetRecentActivitiesURL   string = "https://api.fitbit.com/1/user/-/activities/recent.json"
-	GetFavoriteActivitiesURL string = "https://api.fitbit.com/1/user/%s/activities/favorite.json"
+	ActivityURL                 string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
+	ActivityTimeSeriesURL       string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
+	BrowseActivityTypesURL      string = "https://api.fitbit.com/1/activities.json"
+	GetActivityTypeURL          string = "https://api.fitbit.com/1/activities/%s.json"
+	GetFrequentActivitiesURL    string = "https://api.fitbit.com/1/user/-/activities/frequent.json"
+	GetRecentActivitiesURL      string = "https://api.fitbit.com/1/user/-/activities/recent.json"
+	GetFavoriteActivitiesURL    string = "https://api.fitbit.com/1/user/%s/activities/favorite.json"
+	FavoriteActivityResourceURL string = "https://api.fitbit.com/1/user/-/activities/favorite/%s.json"
 )
 
 // Activities
@@ -396,4 +397,18 @@ func (a *Activity) GetFavoriteActivitiesByID(userID string) ([]FavoriteActivity,
 
 func (a *Activity) GetFavoriteActivities() ([]FavoriteActivity, error) {
 	return a.GetFavoriteActivitiesByID("-")
+}
+
+func (a *Activity) AddFavoriteActivity(activityID string) error {
+	if err := a.c.Post(fmt.Sprintf(FavoriteActivityResourceURL, activityID)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Activity) DeleteFavoriteActivity(activityID string) error {
+	if err := a.c.Delete(fmt.Sprintf(FavoriteActivityResourceURL, activityID)); err != nil {
+		return err
+	}
+	return nil
 }
