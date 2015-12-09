@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 )
 
 type Period string
 type ActivityLogType string
+type ActivityGoalsPeriod string
 
 const (
 	StepsLog               ActivityLogType = "activities/steps"
@@ -31,6 +33,9 @@ const (
 	HalfYear   Period = "6m"
 	OneYear    Period = "1y"
 	Max        Period = "max"
+
+	ActivityGoalsDaily  ActivityGoalsPeriod = "daily"
+	ActivityGoalsWeekly ActivityGoalsPeriod = "weekly"
 	// ActivityURL fitbit activity api url
 	ActivityURL                 string = "https://api.fitbit.com/1/user/%s/activities/date/%s.json"
 	ActivityTimeSeriesURL       string = "https://api.fitbit.com/1/user/%s/%s/date/%s/%s.json"
@@ -40,6 +45,8 @@ const (
 	GetRecentActivitiesURL      string = "https://api.fitbit.com/1/user/-/activities/recent.json"
 	GetFavoriteActivitiesURL    string = "https://api.fitbit.com/1/user/%s/activities/favorite.json"
 	FavoriteActivityResourceURL string = "https://api.fitbit.com/1/user/-/activities/favorite/%s.json"
+	ActivityGoalsURL            string = "https://api.fitbit.com/1/user/%s/activities/goals/%s.json"
+	LifeTimeStatsURL            string = "https://api.fitbit.com/1/user/%s/activities.json"
 )
 
 // Activities
@@ -411,4 +418,94 @@ func (a *Activity) DeleteFavoriteActivity(activityID string) error {
 		return err
 	}
 	return nil
+}
+
+type ActivityGoal struct {
+	CaloriesOut uint64  `json:"caloriesOut"`
+	Distance    float64 `json:"distance"`
+	Floors      uint64  `json:"floors"`
+	Steps       uint64  `json:"steps"`
+}
+
+type ActivityGoalsResponse struct {
+	Goals *ActivityGoal `json:"goals"`
+}
+
+func (a *Activity) GetActivityGoalsByID(userID string, period ActivityGoalsPeriod) (*ActivityGoalsResponse, error) {
+	responseByteArray, err := a.c.Get(fmt.Sprintf(ActivityGoalsURL, userID, string(period)))
+	if err != nil {
+		return nil, err
+	}
+	response := &ActivityGoalsResponse{}
+	if err = json.Unmarshal(responseByteArray, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (a *Activity) GetActivityGoals(period ActivityGoalsPeriod) (*ActivityGoalsResponse, error) {
+	return a.GetActivityGoalsByID("-", period)
+}
+
+func (a *Activity) UpdateActivityGoalsByID(userID string, period ActivityGoalsPeriod, params *ActivityGoal) (*ActivityGoalsResponse, error) {
+	targetUrl := fmt.Sprintf(ActivityGoalsURL, userID, string(period))
+	values := url.Values{}
+	values.Add("caloriesOut", string(params.CaloriesOut))
+	values.Add("distance", fmt.Sprintf("%6.2f", params.Distance))
+	values.Add("floors", string(params.Floors))
+	values.Add("steps", string(params.Steps))
+	response, err := a.c.httpClient.PostForm(targetUrl, values)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	responseByteArray, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &ActivityGoalsResponse{}
+	if err = json.Unmarshal(responseByteArray, ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (a *Activity) UpdateActivityGoals(period ActivityGoalsPeriod, params *ActivityGoal) (*ActivityGoalsResponse, error) {
+	return a.UpdateActivityGoalsByID("-", period, params)
+}
+
+type LifeTimeStatsValue struct {
+	Date  string  `json:"date"`
+	Value float64 `json:"value"`
+}
+
+type LifeTimeStats struct {
+	CaloriesOut *LifeTimeStatsValue `json:"caloriesOut"`
+	Distance    *LifeTimeStatsValue `json:"distance"`
+	Floors      *LifeTimeStatsValue `json:"floors"`
+	Steps       *LifeTimeStatsValue `json:"steps"`
+}
+
+type LifeTimeStatsCategories struct {
+	Total   *LifeTimeStats `json:"total"`
+	Tracker *LifeTimeStats `json:"tracker"`
+}
+
+type LifeTimeStatsResponse struct {
+	Best     *LifeTimeStatsCategories `json:"best"`
+	Lifetime *LifeTimeStatsCategories `json:"lifetime"`
+}
+
+func (a *Activity) GetLifeTimeStatsByID(userID string) (*LifeTimeStatsResponse, error) {
+	responseByteArray, err := a.c.Get(fmt.Sprintf(LifeTimeStatsURL, userID))
+	if err != nil {
+		return nil, err
+	}
+	response := &LifeTimeStatsResponse{}
+	if err = json.Unmarshal(responseByteArray, response); err != nil {
+		return nil, err
+	}
+	return response, nil
 }
